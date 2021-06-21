@@ -14,13 +14,12 @@ namespace myftp
     {
         #region FTP地址，账号，密码
         //FSU的FTP地址
+       // public static string FtpHost = "ftp://192.0.0.65/";
         public static string FtpHost = "ftp://192.168.126.1/";
         //FSU的FTP账号
         public static string FtpAccount = "cntower";
         //FSU的FTP密码
         public static string FtpPassword = "12345";
-        //实例化Timer类
-        System.Timers.Timer aTimer = new System.Timers.Timer();
         #endregion
 
 
@@ -30,32 +29,28 @@ namespace myftp
         /// <param name="localFile">要上传到FTP服务器的文件</param>
         /// <param name="ftpPath">FTP地址</param>
         #region 上传文件
-        public  void UpLoadFile(string localFile, string ftpPath)
+        public void UpLoadFile(string localFile, string ftpPath)
         {
-            
+
             //判断文件是否存在
             if (!File.Exists(localFile))
             {
                 MessageBox.Show("文件：“" + localFile + "” 不存在！");
                 return;
             }
-           
+
             //实现FTP传输协议客户端
             FtpWebRequest ftpWebRequest = null;
 
-            
             //创建文件流对象
             FileStream localFileStream = null;
 
-            
             //字节对象都被存储为连续的字节序列
             //字节按照一定的顺序进行排序组成了字节序列
             //创建流对象
             Stream requestStream = null;
-
             try
             {
-                
                 //根据uri创建FtpWebRequest对象
                 ftpWebRequest = (FtpWebRequest)FtpWebRequest.Create(ftpPath);
 
@@ -75,9 +70,7 @@ namespace myftp
                 //上传文件时通知服务器文件的大小 
                 ftpWebRequest.ContentLength = localFile.Length;
 
-
-               // ftpWebRequest.Proxy = new WebProxy();
-
+                // ftpWebRequest.Proxy = new WebProxy();
 
                 //缓冲大小设置为4kb  
                 int buffLength = 4096;
@@ -110,7 +103,7 @@ namespace myftp
 
             catch (Exception ex)
             {
-               
+
                 MessageBox.Show(ex.Message, "FileUpLoad0001");
             }
             //关闭两个流
@@ -124,9 +117,8 @@ namespace myftp
                 {
                     localFileStream.Close();
                 }
-               
-            }
 
+            }
 
         }
         #endregion
@@ -140,13 +132,13 @@ namespace myftp
         /// <param name="dirName">要检查的目录的文件夹名称</param>
         /// <returns></returns>
         #region 检查目录是否存在
-        public static bool CheckDirectoryExist(string ftpPath,string dirName)
+        public static bool CheckDirectoryExist(string ftpPath, string dirName)
         {
             bool flag = false;
             try
             {
                 //实例化FTP连接
-                FtpWebRequest request = (FtpWebRequest)FtpWebRequest.Create(ftpPath+dirName);
+                FtpWebRequest request = (FtpWebRequest)FtpWebRequest.Create(ftpPath + dirName);
                 //ftp用户名和密码,获取通信
                 request.Credentials = new NetworkCredential(FtpAccount, FtpPassword);
                 //指定FTP操作类型为获取目录
@@ -185,9 +177,9 @@ namespace myftp
                 Stream ftpStream = response.GetResponseStream();
                 ftpStream.Close();
                 response.Close();
-                MessageBox.Show("文件夹【" + dirName + "】创建成功！");
+               Console.WriteLine("文件夹【" + dirName + "】创建成功！");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("新建文件夹【" + dirName + "】时，发生错误：" + ex.Message);
             }
@@ -202,7 +194,7 @@ namespace myftp
         /// <returns></returns>  
         /// 
         #region 获取目录下详细信息
-        private static List<List<string>> GetDirDetails(string localDir)
+        public static List<List<string>> GetDirDetails(string localDir)
         {
             List<List<string>> infos = new List<List<string>>();
             try
@@ -231,48 +223,66 @@ namespace myftp
 
         #endregion
 
+        #region 生成制定位数随机数算法
 
+        public static string GenerateRandomCode(int length)
+        {
+            var result = new StringBuilder();
+            for (var i = 0; i < length; i++)
+            {
+                var r = new Random(Guid.NewGuid().GetHashCode());
+                result.Append(r.Next(0, 10));
+            }
+            return result.ToString();
+        }
+        #endregion
 
         #region 上传文件夹
         /// <summary>
         /// 通过FTP上传整个文件夹内的文件
         /// </summary>
-        /// <param name="localDir"></param>
-        /// <param name="ftpPath"></param>
-        /// <param name="dirName"></param>
+        /// <param name="localDir">文件夹上一级目录</param>
+        /// <param name="ftpPath">ftp地址</param>
+        /// <param name="dirName">文件夹名称</param>
         /// 
-        public  void UpLoadDirectory(string localDir, string ftpPath, string dirName,int dateT)
+        public void UpLoadDirectory(string localDir, string ftpPath, string dirName, int dateT)
         {
+            string randStr = GenerateRandomCode(6);
             string dir = localDir + dirName + @"\"; //获取当前目录（父目录在目录名）  
                                                     //检测本地目录是否存在  
             if (!Directory.Exists(dir))
             {
-                MessageBox.Show("本地目录：“" + dir + "” 不存在！<br/>");
+                MessageBox.Show("本地目录：“" + dir + "” 不存在！");
                 return;
             }
             //检测FTP的目录路径是否存在  
             if (!CheckDirectoryExist(ftpPath, dirName))
             {
-                MakeDir(ftpPath, dirName);//不存在，则创建此文件夹  
+               
+                MakeDir(ftpPath, dirName+ randStr);//不存在，则创建此文件夹  
             }
             
+
             List<List<string>> infos = GetDirDetails(dir); //获取当前目录下的所有文件和文件夹  
 
             //先上传文件  
             //Response.Write(dir + "下的文件数：" + infos[0].Count.ToString() + "<br/>");  
             for (int i = 0; i < infos[0].Count; i++)
             {
+
                 Console.WriteLine(infos[0][i]);
-                UpLoadFile(dir + infos[0][i], ftpPath + dirName + @"/" + infos[0][i]);
+               
+                //上传的时间间隔，采用线程休眠方式，参数为休眠时间，单位：ms
+                Thread.Sleep(dateT);
+                UpLoadFile(dir + infos[0][i], ftpPath + dirName+ randStr + @"/" + infos[0][i]);
             }
-            
-            Thread.Sleep(dateT);
-            
+
             //再处理文件夹  
             //Response.Write(dir + "下的目录数：" + infos[1].Count.ToString() + "<br/>");  
             for (int i = 0; i < infos[1].Count; i++)
             {
-                UpLoadDirectory(dir, ftpPath + dirName + @"/", infos[1][i],0);
+                Thread.Sleep(dateT);
+                UpLoadDirectory(dir, ftpPath + dirName + randStr + @"/", infos[1][i], 0);
                 //Response.Write("文件夹【" + dirName + "】上传成功！<br/>");  
             }
         }
@@ -280,7 +290,24 @@ namespace myftp
 
 
 
-     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
 
@@ -288,4 +315,11 @@ namespace myftp
 
 
 
+
+
+
 }
+
+
+
+
